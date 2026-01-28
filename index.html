@@ -8,6 +8,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+  <!-- PrimeIcons pro popelnici -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons/primeicons.css">
+
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -22,7 +25,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 12px;
     }
     h1 { margin: 0; font-size: 22px; }
     button {
@@ -33,6 +36,11 @@
       color: white;
       font-size: 14px;
       cursor: pointer;
+    }
+    #todayInfo {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #333;
     }
     .cards {
       display: grid;
@@ -60,11 +68,12 @@
       font-size: 13px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      background: #000000;
+      background: #000;
+      color: white;
       cursor: pointer;
       align-self: flex-start;
     }
-    .instructions button:hover { background: #e0e0e0; }
+    .instructions button:hover { background: #333; }
     .slot {
       background: #eee;
       border-radius: 8px;
@@ -92,10 +101,10 @@
       right: 8px;
       font-size: 16px;
       cursor: pointer;
-      color: red;
-      opacity: 0.8;
+      color: black;
     }
-    .delete:hover { opacity: 1; }
+    .delete::before { content: "\f1f8"; font-family: "PrimeIcons"; }
+    .delete:hover { opacity: 0.7; }
     /* MODAL pro sloty */
     .modal {
       position: fixed;
@@ -140,6 +149,7 @@
   <button>Historie</button>
 </header>
 
+<div id="todayInfo"></div>
 <div class="cards" id="cards"></div>
 
 <!-- MODAL pro sloty -->
@@ -194,6 +204,11 @@ const inputSegment = document.getElementById("inputSegment");
 const inputNote = document.getElementById("inputNote");
 const saveBtn = document.getElementById("saveBtn");
 const modal = document.getElementById("modal");
+
+// Dnes je
+document.getElementById("todayInfo").textContent = "Dnes je: " + new Date().toLocaleDateString("cs-CZ", {
+  weekday:"long", day:"numeric", month:"long", year:"numeric"
+});
 
 function getNextWednesday(date) {
   const d = new Date(date);
@@ -291,7 +306,7 @@ function renderSlot(slot) {
 
   slot.classList.add("occupied");
   slot.innerHTML = `
-    <div class="delete">🗑️</div>
+    <div class="delete"></div>
     <div class="slot-time">${slot.dataset.time}</div>
     <div class="slot-name">${data.name}</div>
     <div class="slot-meta">${data.team} · ${data.journey}</div>
