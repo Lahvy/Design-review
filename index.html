@@ -52,19 +52,19 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      background: #fffbe6;
-      border-left: 4px solid #ffcc00;
       font-size: 13px;
       color: #333;
     }
-    .instructions textarea {
-      resize: vertical;
-      min-height: 40px;
+    .instructions button {
+      padding: 6px 10px;
       font-size: 13px;
-      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #f0f0f0;
+      cursor: pointer;
+      align-self: flex-start;
     }
+    .instructions button:hover { background: #e0e0e0; }
     .slot {
       background: #eee;
       border-radius: 8px;
@@ -96,7 +96,7 @@
       opacity: 0.8;
     }
     .delete:hover { opacity: 1; }
-    /* MODAL */
+    /* MODAL pro sloty */
     .modal {
       position: fixed;
       inset: 0;
@@ -125,6 +125,12 @@
       font-size: 14px;
       box-sizing: border-box;
     }
+    /* MODAL pro poznámku Honzy */
+    #honzaModal .modal-content textarea { min-height: 60px; resize: vertical; }
+    #honzaModal .modal-info { font-size: 12px; color: #666; margin-bottom: 8px; }
+    #honzaModal button { padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-right: 8px; }
+    #honzaModal .save-btn { background: #222; color: white; border: none; }
+    #honzaModal .cancel-btn { background: #eee; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
@@ -136,7 +142,7 @@
 
 <div class="cards" id="cards"></div>
 
-<!-- MODAL -->
+<!-- MODAL pro sloty -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3>Přihlášení na slot</h3>
@@ -153,165 +159,189 @@
   </div>
 </div>
 
+<!-- MODAL pro poznámku Honzy -->
+<div class="modal" id="honzaModal">
+  <div class="modal-content">
+    <h3>Poznámka Honzy Kemzy</h3>
+    <textarea id="honzaInput"></textarea>
+    <div class="modal-info">Poznámku smí vyplnit jen Honza Kemza nebo jiná zmocněná osoba.</div>
+    <div>
+      <button class="save-btn" id="honzaSaveBtn">Uložit</button>
+      <button class="cancel-btn" id="honzaCancelBtn">Storno</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const firebaseConfig = {
-    apiKey: "TVŮJ_API_KEY",
-    authDomain: "design-review-data.firebaseapp.com",
-    projectId: "design-review-data",
-    storageBucket: "design-review-data.appspot.com",
-    messagingSenderId: "TVŮJ_SENDER_ID",
-    appId: "TVŮJ_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+const firebaseConfig = {
+  apiKey: "TVŮJ_API_KEY",
+  authDomain: "design-review-data.firebaseapp.com",
+  projectId: "design-review-data",
+  storageBucket: "design-review-data.appspot.com",
+  messagingSenderId: "TVŮJ_SENDER_ID",
+  appId: "TVŮJ_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
-  let activeSlot = null;
+const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
+let activeSlot = null;
 
-  const inputName = document.getElementById("inputName");
-  const inputTeam = document.getElementById("inputTeam");
-  const inputJourney = document.getElementById("inputJourney");
-  const inputSegment = document.getElementById("inputSegment");
-  const inputNote = document.getElementById("inputNote");
-  const saveBtn = document.getElementById("saveBtn");
-  const modal = document.getElementById("modal");
+const inputName = document.getElementById("inputName");
+const inputTeam = document.getElementById("inputTeam");
+const inputJourney = document.getElementById("inputJourney");
+const inputSegment = document.getElementById("inputSegment");
+const inputNote = document.getElementById("inputNote");
+const saveBtn = document.getElementById("saveBtn");
+const modal = document.getElementById("modal");
 
-  function getNextWednesday(date) {
-    const d = new Date(date);
-    d.setDate(d.getDate() + (3 - d.getDay() + 7) % 7);
-    return d;
-  }
+function getNextWednesday(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + (3 - d.getDay() + 7) % 7);
+  return d;
+}
 
-  async function renderCards() {
-    const container = document.getElementById("cards");
-    container.innerHTML = "";
+async function renderCards() {
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
 
-    const snapshot = await db.collection("slots").get();
-    const slotsFromDb = {};
-    snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
+  const snapshot = await db.collection("slots").get();
+  const slotsFromDb = {};
+  snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
 
-    let day = getNextWednesday(new Date());
+  let day = getNextWednesday(new Date());
 
-    for (let i = 0; i < 4; i++) {
-      const card = document.createElement("div");
-      card.className = "card";
+  for (let i = 0; i < 4; i++) {
+    const card = document.createElement("div");
+    card.className = "card";
 
-      const dateStr = day.toLocaleDateString("cs-CZ", { weekday:"long", day:"numeric", month:"long" });
-      const title = document.createElement("h2");
-      title.textContent = dateStr;
-      card.appendChild(title);
+    const dateStr = day.toLocaleDateString("cs-CZ", { weekday:"long", day:"numeric", month:"long" });
+    const title = document.createElement("h2");
+    title.textContent = dateStr;
+    card.appendChild(title);
 
-      // ===== Pokyny Honzy Kemzy =====
-      const instructionsDiv = document.createElement("div");
-      instructionsDiv.className = "instructions";
+    // ===== Pokyny Honzy Kemzy s modalem =====
+    const instructionsDiv = document.createElement("div");
+    instructionsDiv.className = "instructions";
+    const instructionsDocId = dateStr + " instructions";
+    const currentText = slotsFromDb[instructionsDocId]?.text || "";
 
-      const label = document.createElement("strong");
-      label.textContent = "Pokyny Honzy Kemzy:";
-      instructionsDiv.appendChild(label);
+    const addButton = document.createElement("button");
+    addButton.textContent = currentText || "Přidat poznámku Honzy Kemzy";
+    instructionsDiv.appendChild(addButton);
 
-      const instructionsTextarea = document.createElement("textarea");
-      const instructionsDocId = dateStr + " instructions";
-      instructionsTextarea.value = slotsFromDb[instructionsDocId]?.text || "";
-      instructionsDiv.appendChild(instructionsTextarea);
+    addButton.onclick = () => {
+      const honzaModal = document.getElementById("honzaModal");
+      const honzaInput = document.getElementById("honzaInput");
+      honzaInput.value = slotsFromDb[instructionsDocId]?.text || "";
+      honzaModal.classList.add("open");
 
-      // Uložení po kliknutí na tlačítko uložit
-      const saveInstructionsBtn = document.createElement("button");
-      saveInstructionsBtn.textContent = "Uložit pokyny";
-      saveInstructionsBtn.style.marginTop = "4px";
-      saveInstructionsBtn.onclick = async () => {
-        await db.collection("slots").doc(instructionsDocId).set({ text: instructionsTextarea.value });
-        alert("Pokyny uloženy ✅");
+      const saveBtnModal = document.getElementById("honzaSaveBtn");
+      const cancelBtnModal = document.getElementById("honzaCancelBtn");
+
+      saveBtnModal.onclick = async () => {
+        await db.collection("slots").doc(instructionsDocId).set({ text: honzaInput.value });
+        addButton.textContent = honzaInput.value || "Přidat poznámku Honzy Kemzy";
+        slotsFromDb[instructionsDocId] = { text: honzaInput.value };
+        honzaModal.classList.remove("open");
       };
-      instructionsDiv.appendChild(saveInstructionsBtn);
 
-      card.appendChild(instructionsDiv);
+      cancelBtnModal.onclick = () => { honzaModal.classList.remove("open"); };
+    };
 
-      defaultSlots.forEach(time => {
-        const slot = document.createElement("div");
-        slot.className = "slot";
-        slot.dataset.time = time;
+    document.getElementById("honzaModal").onclick = e => {
+      if(e.target.id === "honzaModal") e.target.classList.remove("open");
+    };
 
-        const docId = dateStr + " " + time;
-        if (slotsFromDb[docId]) slot.data = slotsFromDb[docId];
+    card.appendChild(instructionsDiv);
 
-        renderSlot(slot);
+    // ===== sloty =====
+    defaultSlots.forEach(time => {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      slot.dataset.time = time;
 
-        slot.addEventListener("click", e => {
-          if (e.target.classList.contains("delete")) return;
-          activeSlot = slot;
-          fillForm(slot);
-          openModal();
-        });
+      const docId = dateStr + " " + time;
+      if (slotsFromDb[docId]) slot.data = slotsFromDb[docId];
 
-        card.appendChild(slot);
+      renderSlot(slot);
+
+      slot.addEventListener("click", e => {
+        if (e.target.classList.contains("delete")) return;
+        activeSlot = slot;
+        fillForm(slot);
+        openModal();
       });
 
-      container.appendChild(card);
-      day.setDate(day.getDate() + 7);
+      card.appendChild(slot);
+    });
+
+    container.appendChild(card);
+    day.setDate(day.getDate() + 7);
+  }
+}
+
+function renderSlot(slot) {
+  const data = slot.data;
+  if (!data) {
+    slot.classList.remove("occupied");
+    slot.innerHTML = `<div class="slot-time">${slot.dataset.time}</div>`;
+    return;
+  }
+
+  slot.classList.add("occupied");
+  slot.innerHTML = `
+    <div class="delete">🗑️</div>
+    <div class="slot-time">${slot.dataset.time}</div>
+    <div class="slot-name">${data.name}</div>
+    <div class="slot-meta">${data.team} · ${data.journey}</div>
+    <span class="badge ${data.segment === "SMB"?"smb":"retail"}">${data.segment}</span>
+  `;
+
+  slot.querySelector(".delete").onclick = async () => {
+    if (confirm("Opravdu chcete smazat přihlášku?")) {
+      const docId = slot.closest(".card").querySelector("h2").textContent + " " + slot.dataset.time;
+      await db.collection("slots").doc(docId).delete();
+      slot.data = null;
+      renderSlot(slot);
     }
-  }
+  };
+}
 
-  function renderSlot(slot) {
-    const data = slot.data;
-    if (!data) {
-      slot.classList.remove("occupied");
-      slot.innerHTML = `<div class="slot-time">${slot.dataset.time}</div>`;
-      return;
-    }
+function fillForm(slot) {
+  const d = slot.data || {};
+  inputName.value = d.name || "";
+  inputTeam.value = d.team || "";
+  inputJourney.value = d.journey || "";
+  inputSegment.value = d.segment || "";
+  inputNote.value = d.note || "";
+}
 
-    slot.classList.add("occupied");
-    slot.innerHTML = `
-      <div class="delete">🗑️</div>
-      <div class="slot-time">${slot.dataset.time}</div>
-      <div class="slot-name">${data.name}</div>
-      <div class="slot-meta">${data.team} · ${data.journey}</div>
-      <span class="badge ${data.segment === "SMB"?"smb":"retail"}">${data.segment}</span>
-    `;
+saveBtn.onclick = async () => {
+  if (!activeSlot) return;
 
-    slot.querySelector(".delete").onclick = async () => {
-      if (confirm("Opravdu chcete smazat přihlášku?")) {
-        const docId = slot.closest(".card").querySelector("h2").textContent + " " + slot.dataset.time;
-        await db.collection("slots").doc(docId).delete();
-        slot.data = null;
-        renderSlot(slot);
-      }
-    };
-  }
-
-  function fillForm(slot) {
-    const d = slot.data || {};
-    inputName.value = d.name || "";
-    inputTeam.value = d.team || "";
-    inputJourney.value = d.journey || "";
-    inputSegment.value = d.segment || "";
-    inputNote.value = d.note || "";
-  }
-
-  saveBtn.onclick = async () => {
-    if (!activeSlot) return;
-
-    const slotData = {
-      time: activeSlot.dataset.time,
-      name: inputName.value,
-      team: inputTeam.value,
-      journey: inputJourney.value,
-      segment: inputSegment.value,
-      note: inputNote.value,
-      date: activeSlot.closest(".card").querySelector("h2").textContent
-    };
-
-    await db.collection("slots").doc(slotData.date + " " + slotData.time).set(slotData);
-
-    activeSlot.data = slotData;
-    renderSlot(activeSlot);
-    closeModal();
+  const slotData = {
+    time: activeSlot.dataset.time,
+    name: inputName.value,
+    team: inputTeam.value,
+    journey: inputJourney.value,
+    segment: inputSegment.value,
+    note: inputNote.value,
+    date: activeSlot.closest(".card").querySelector("h2").textContent
   };
 
-  function openModal() { modal.classList.add("open"); }
-  function closeModal() { modal.classList.remove("open"); }
-  modal.onclick = e => { if (e.target === modal) closeModal(); };
+  await db.collection("slots").doc(slotData.date + " " + slotData.time).set(slotData);
 
-  renderCards();
+  activeSlot.data = slotData;
+  renderSlot(activeSlot);
+  closeModal();
+};
+
+function openModal() { modal.classList.add("open"); }
+function closeModal() { modal.classList.remove("open"); }
+modal.onclick = e => { if (e.target === modal) closeModal(); };
+
+renderCards();
 </script>
 
 </body>
