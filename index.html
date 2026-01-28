@@ -210,22 +210,34 @@
         slot.className = "slot";
         slot.dataset.time = time;
 
-        renderSlot(slot);
+        function renderSlot(slot) {
+  const data = slot.data;
 
-        slot.addEventListener("click", e => {
-          if (e.target.classList.contains("delete")) return;
-          activeSlot = slot;
-          fillForm(slot);
-          openModal();
-        });
-
-        card.appendChild(slot);
-      });
-
-      container.appendChild(card);
-      day.setDate(day.getDate() + 7);
-    }
+  if (!data) {
+    slot.classList.remove("occupied");
+    slot.innerHTML = `<div class="slot-time">${slot.dataset.time}</div>`;
+    return;
   }
+
+  slot.classList.add("occupied");
+  slot.innerHTML = `
+    <div class="delete">🗑️</div>
+    <div class="slot-time">${slot.dataset.time}</div>
+    <div class="slot-name">${data.name}</div>
+    <div class="slot-meta">${data.team} · ${data.journey}</div>
+    <span class="badge ${data.segment === "SMB" ? "smb" : "retail"}">
+      ${data.segment}
+    </span>
+  `;
+
+  slot.querySelector(".delete").onclick = () => {
+    if (confirm("Opravdu chcete smazat přihlášku?")) {
+      slot.data = null;
+      renderSlot(slot);
+    }
+  };
+}
+
 
   function renderSlot(slot) {
     const data = slot.data;
