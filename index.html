@@ -103,8 +103,12 @@
       cursor: pointer;
       color: black;
     }
-    .delete::before { content: "\f1f8"; font-family: "PrimeIcons"; }
-    .delete:hover { opacity: 0.7; }
+    .delete i {
+      font-size: 16px;
+      color: black;
+      cursor: pointer;
+    }
+    .delete:hover i { opacity: 0.7; }
     /* MODAL pro sloty */
     .modal {
       position: fixed;
@@ -282,7 +286,7 @@ async function renderCards() {
       renderSlot(slot);
 
       slot.addEventListener("click", e => {
-        if (e.target.classList.contains("delete")) return;
+        if (e.target.closest(".delete")) return;
         activeSlot = slot;
         fillForm(slot);
         openModal();
@@ -306,14 +310,15 @@ function renderSlot(slot) {
 
   slot.classList.add("occupied");
   slot.innerHTML = `
-    <div class="delete"></div>
+    <div class="delete"><i class="pi pi-trash"></i></div>
     <div class="slot-time">${slot.dataset.time}</div>
     <div class="slot-name">${data.name}</div>
     <div class="slot-meta">${data.team} · ${data.journey}</div>
     <span class="badge ${data.segment === "SMB"?"smb":"retail"}">${data.segment}</span>
   `;
 
-  slot.querySelector(".delete").onclick = async () => {
+  slot.querySelector(".delete").onclick = async (e) => {
+    e.stopPropagation(); // zabránit otevření modalu
     if (confirm("Opravdu chcete smazat přihlášku?")) {
       const docId = slot.closest(".card").querySelector("h2").textContent + " " + slot.dataset.time;
       await db.collection("slots").doc(docId).delete();
