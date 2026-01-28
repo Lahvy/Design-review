@@ -49,12 +49,21 @@
       gap: 12px;
     }
     .instructions {
-      background: #fffbe6;
-      border-left: 4px solid #ffcc00;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
       padding: 8px 12px;
       border-radius: 6px;
+      background: #fffbe6;
+      border-left: 4px solid #ffcc00;
       font-size: 13px;
       color: #333;
+    }
+    .instructions textarea {
+      resize: vertical;
+      min-height: 40px;
+      font-size: 13px;
+      padding: 4px 6px;
     }
     .slot {
       background: #eee;
@@ -81,9 +90,10 @@
       position: absolute;
       top: 8px;
       right: 8px;
-      font-size: 14px;
+      font-size: 16px;
       cursor: pointer;
-      opacity: 0.6;
+      color: red;
+      opacity: 0.8;
     }
     .delete:hover { opacity: 1; }
     /* MODAL */
@@ -144,7 +154,6 @@
 </div>
 
 <script>
-  // ====== Firebase config ======
   const firebaseConfig = {
     apiKey: "TVŮJ_API_KEY",
     authDomain: "design-review-data.firebaseapp.com",
@@ -173,12 +182,10 @@
     return d;
   }
 
-  // ====== Render karet + načtení z Firestore ======
   async function renderCards() {
     const container = document.getElementById("cards");
     container.innerHTML = "";
 
-    // načtení všech slotů
     const snapshot = await db.collection("slots").get();
     const slotsFromDb = {};
     snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
@@ -194,12 +201,30 @@
       title.textContent = dateStr;
       card.appendChild(title);
 
-      // instrukce Honzy
-      const instructions = document.createElement("div");
-      instructions.className = "instructions";
-      const instructionsDoc = slotsFromDb[dateStr + " instructions"];
-      instructions.textContent = instructionsDoc ? instructionsDoc.text : "Pokyny Honzy Kemzy…";
-      card.appendChild(instructions);
+      // ===== Pokyny Honzy Kemzy =====
+      const instructionsDiv = document.createElement("div");
+      instructionsDiv.className = "instructions";
+
+      const label = document.createElement("strong");
+      label.textContent = "Pokyny Honzy Kemzy:";
+      instructionsDiv.appendChild(label);
+
+      const instructionsTextarea = document.createElement("textarea");
+      const instructionsDocId = dateStr + " instructions";
+      instructionsTextarea.value = slotsFromDb[instructionsDocId]?.text || "";
+      instructionsDiv.appendChild(instructionsTextarea);
+
+      // Uložení po kliknutí na tlačítko uložit
+      const saveInstructionsBtn = document.createElement("button");
+      saveInstructionsBtn.textContent = "Uložit pokyny";
+      saveInstructionsBtn.style.marginTop = "4px";
+      saveInstructionsBtn.onclick = async () => {
+        await db.collection("slots").doc(instructionsDocId).set({ text: instructionsTextarea.value });
+        alert("Pokyny uloženy ✅");
+      };
+      instructionsDiv.appendChild(saveInstructionsBtn);
+
+      card.appendChild(instructionsDiv);
 
       defaultSlots.forEach(time => {
         const slot = document.createElement("div");
