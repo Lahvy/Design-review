@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Design Review Planner</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 24px;
+    }
+
+    h1 {
+      margin-bottom: 24px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    .slot {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #eee;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Design Review</h1>
+
+  <div class="cards" id="cards"></div>
+
+  <script>
+    // pevně dané sloty pro středu
+    const defaultSlots = [
+      "13:05 – 13:45",
+      "13:45 – 14:25",
+      "14:35 – 15:15",
+      "15:15 – 15:55"
+    ];
+
+    // najde nejbližší středu (včetně dneška)
+    function getNextWednesday(date) {
+      const result = new Date(date);
+      const day = result.getDay(); // 0 = neděle, 3 = středa
+      const diff = (3 - day + 7) % 7;
+      result.setDate(result.getDate() + diff);
+      return result;
+    }
+
+    // vytvoří pole dalších střed
+    function getUpcomingWednesdays(count) {
+      const wednesdays = [];
+      let current = getNextWednesday(new Date());
+
+      for (let i = 0; i < count; i++) {
+        wednesdays.push(new Date(current));
+        current.setDate(current.getDate() + 7);
+      }
+
+      return wednesdays;
+    }
+
+    // vykreslení karet
+    function renderCards() {
+      const container = document.getElementById("cards");
+      const days = getUpcomingWednesdays(4);
+
+      days.forEach(day => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const title = document.createElement("h2");
+        title.textContent = day.toLocaleDateString("cs-CZ", {
+          weekday: "long",
+          day: "numeric",
+          month: "long"
+        });
+
+        card.appendChild(title);
+
+        defaultSlots.forEach(slot => {
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "slot";
+          slotDiv.textContent = slot;
+          card.appendChild(slotDiv);
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    renderCards();
+  </script>
+
+</body>
+</html>
