@@ -20,7 +20,6 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 24px;
-      gap: 12px;
     }
 
     h1 {
@@ -53,29 +52,57 @@
     }
 
     .slot {
-      padding: 10px 12px;
-      border-radius: 8px;
       background: #eee;
+      border-radius: 8px;
+      padding: 10px 12px;
       margin-bottom: 8px;
-      font-size: 14px;
       cursor: pointer;
+      position: relative;
     }
 
     .slot.occupied {
-      background: #d1e7dd;
+      background: #f0f9f5;
     }
 
-    footer {
-      margin-top: 32px;
-      display: flex;
-      justify-content: center;
+    .slot-name {
+      font-weight: 600;
+      font-size: 14px;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      opacity: 0.7;
+    .slot-meta {
+      font-size: 12px;
+      color: #555;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    .badge.smb {
+      background: #d0e7ff;
+      color: #004a8f;
+    }
+
+    .badge.retail {
+      background: #ffd6d6;
+      color: #8f0000;
+    }
+
+    .delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      opacity: 0.6;
+    }
+
+    .delete:hover {
+      opacity: 1;
     }
 
     /* MODAL */
@@ -96,13 +123,9 @@
     .modal-content {
       background: white;
       border-radius: 12px;
-      padding: 16px;
+      padding: 20px;
       width: 100%;
       max-width: 400px;
-    }
-
-    .modal-content h3 {
-      margin-top: 0;
     }
 
     .modal-content input,
@@ -126,12 +149,6 @@
 
 <div class="cards" id="cards"></div>
 
-<footer>
-  <div class="logo">
-    <span>Honza kemza<br>and partners</span>
-  </div>
-</footer>
-
 <!-- MODAL -->
 <div class="modal" id="modal">
   <div class="modal-content">
@@ -143,8 +160,8 @@
 
     <select id="segment">
       <option value="">Segment</option>
-      <option>Retail</option>
-      <option>SMB</option>
+      <option value="SMB">SMB</option>
+      <option value="Retail">Retail</option>
     </select>
 
     <textarea id="note" placeholder="Poznámka"></textarea>
@@ -164,27 +181,18 @@
   let activeSlot = null;
 
   function getNextWednesday(date) {
-    const result = new Date(date);
-    const diff = (3 - result.getDay() + 7) % 7;
-    result.setDate(result.getDate() + diff);
-    return result;
-  }
-
-  function getUpcomingWednesdays(count) {
-    const days = [];
-    let current = getNextWednesday(new Date());
-    for (let i = 0; i < count; i++) {
-      days.push(new Date(current));
-      current.setDate(current.getDate() + 7);
-    }
-    return days;
+    const d = new Date(date);
+    d.setDate(d.getDate() + (3 - d.getDay() + 7) % 7);
+    return d;
   }
 
   function renderCards() {
     const container = document.getElementById("cards");
     container.innerHTML = "";
 
-    getUpcomingWednesdays(4).forEach(day => {
+    let day = getNextWednesday(new Date());
+
+    for (let i = 0; i < 4; i++) {
       const card = document.createElement("div");
       card.className = "card";
 
@@ -200,10 +208,14 @@
       defaultSlots.forEach(time => {
         const slot = document.createElement("div");
         slot.className = "slot";
-        slot.textContent = time;
+        slot.dataset.time = time;
 
-        slot.addEventListener("click", () => {
+        renderSlot(slot);
+
+        slot.addEventListener("click", e => {
+          if (e.target.classList.contains("delete")) return;
           activeSlot = slot;
+          fillForm(slot);
           openModal();
         });
 
@@ -211,32 +223,69 @@
       });
 
       container.appendChild(card);
-    });
+      day.setDate(day.getDate() + 7);
+    }
   }
 
+  function renderSlot(slot) {
+    const data = slot.data;
+
+    if (!data) {
+      slot.textContent = slot.dataset.time;
+      slot.classList.remove("occupied");
+      return;
+    }
+
+    slot.classList.add("occupied");
+    slot.innerHTML = `
+      <div class="delete">🗑️</div>
+      <div class="slot-name">${data.name}</div>
+      <div class="slot-meta">${data.team} · ${data.journey}</div>
+      <span class="badge ${data.segment === "SMB" ? "smb" : "retail"}">
+        ${data.segment}
+      </span>
+    `;
+
+    slot.querySelector(".delete").onclick = () => {
+      if (confirm("Opravdu chcete smazat přihlášku?")) {
+        slot.data = null;
+        renderSlot(slot);
+      }
+    };
+  }
+
+  function fillForm(slot) {
+    const d = slot.data || {};
+    name.value = d.name || "";
+    team.value = d.team || "";
+    journey.value = d.journey || "";
+    segment.value = d.segment || "";
+    note.value = d.note || "";
+  }
+
+  saveBtn.onclick = () => {
+    activeSlot.data = {
+      name: name.value,
+      team: team.value,
+      journey: journey.value,
+      segment: segment.value,
+      note: note.value
+    };
+    renderSlot(activeSlot);
+    closeModal();
+  };
+
   function openModal() {
-    document.getElementById("modal").classList.add("open");
+    modal.classList.add("open");
   }
 
   function closeModal() {
-    document.getElementById("modal").classList.remove("open");
+    modal.classList.remove("open");
   }
 
-  document.getElementById("saveBtn").addEventListener("click", () => {
-    if (!activeSlot) return;
-
-    const name = document.getElementById("name").value;
-    const team = document.getElementById("team").value;
-
-    activeSlot.classList.add("occupied");
-    activeSlot.textContent = `${activeSlot.textContent} — ${name} (${team})`;
-
-    closeModal();
-  });
-
-  document.getElementById("modal").addEventListener("click", e => {
-    if (e.target.id === "modal") closeModal();
-  });
+  modal.onclick = e => {
+    if (e.target === modal) closeModal();
+  };
 
   renderCards();
 </script>
