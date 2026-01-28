@@ -38,13 +38,23 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
-      flex-grow: 1;
     }
     .card {
       background: white;
       border-radius: 12px;
       padding: 16px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .instructions {
+      background: #fffbe6;
+      border-left: 4px solid #ffcc00;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #333;
     }
     .slot {
       background: #eee;
@@ -146,7 +156,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ====== Sloty ======
   const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
   let activeSlot = null;
 
@@ -169,6 +178,7 @@
     const container = document.getElementById("cards");
     container.innerHTML = "";
 
+    // načtení všech slotů
     const snapshot = await db.collection("slots").get();
     const slotsFromDb = {};
     snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
@@ -183,6 +193,13 @@
       const title = document.createElement("h2");
       title.textContent = dateStr;
       card.appendChild(title);
+
+      // instrukce Honzy
+      const instructions = document.createElement("div");
+      instructions.className = "instructions";
+      const instructionsDoc = slotsFromDb[dateStr + " instructions"];
+      instructions.textContent = instructionsDoc ? instructionsDoc.text : "Pokyny Honzy Kemzy…";
+      card.appendChild(instructions);
 
       defaultSlots.forEach(time => {
         const slot = document.createElement("div");
@@ -209,7 +226,6 @@
     }
   }
 
-  // ====== Render jednotlivého slotu ======
   function renderSlot(slot) {
     const data = slot.data;
     if (!data) {
