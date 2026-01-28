@@ -92,4 +92,104 @@
       text-align: center;
     }
 
-    @media (max-wid
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 18px;
+      }
+
+      button {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Design Review</h1>
+    <button id="historyBtn">Historie</button>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <footer>
+    <div class="logo">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <!-- hlava -->
+        <circle cx="50" cy="38" r="22" fill="#222"/>
+        <!-- vousy -->
+        <path d="M28 45 Q50 70 72 45 V60 Q50 85 28 60 Z" fill="#222"/>
+        <!-- úsměv -->
+        <path d="M40 42 Q50 48 60 42" stroke="#fff" stroke-width="2" fill="none"/>
+      </svg>
+      <span>Honza kemza<br>and partners</span>
+    </div>
+  </footer>
+
+  <script>
+    const defaultSlots = [
+      "13:05 – 13:45",
+      "13:45 – 14:25",
+      "14:35 – 15:15",
+      "15:15 – 15:55"
+    ];
+
+    function getNextWednesday(date) {
+      const result = new Date(date);
+      const day = result.getDay();
+      const diff = (3 - day + 7) % 7;
+      result.setDate(result.getDate() + diff);
+      return result;
+    }
+
+    function getUpcomingWednesdays(count) {
+      const wednesdays = [];
+      let current = getNextWednesday(new Date());
+
+      for (let i = 0; i < count; i++) {
+        wednesdays.push(new Date(current));
+        current.setDate(current.getDate() + 7);
+      }
+
+      return wednesdays;
+    }
+
+    function renderCards() {
+      const container = document.getElementById("cards");
+      container.innerHTML = "";
+
+      const days = getUpcomingWednesdays(4);
+
+      days.forEach(day => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const title = document.createElement("h2");
+        title.textContent = day.toLocaleDateString("cs-CZ", {
+          weekday: "long",
+          day: "numeric",
+          month: "long"
+        });
+
+        card.appendChild(title);
+
+        defaultSlots.forEach(slot => {
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "slot";
+          slotDiv.textContent = slot;
+          card.appendChild(slotDiv);
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById("historyBtn").addEventListener("click", () => {
+      alert("Historie zatím není napojená. Přijde v dalším kroku.");
+    });
+
+    renderCards();
+  </script>
+
+</body>
+</html>
