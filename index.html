@@ -161,17 +161,17 @@
   <div class="modal-content">
     <h3>Přihlášení na slot</h3>
 
-    <input id="name" placeholder="Jméno" />
-    <input id="team" placeholder="Tým" />
-    <input id="journey" placeholder="Název cesty" />
+    <input id="inputName" placeholder="Jméno" />
+    <input id="inputTeam" placeholder="Tým" />
+    <input id="inputJourney" placeholder="Název cesty" />
 
-    <select id="segment">
+    <select id="inputSegment">
       <option value="">Segment</option>
       <option value="SMB">SMB</option>
       <option value="Retail">Retail</option>
     </select>
 
-    <textarea id="note" placeholder="Poznámka"></textarea>
+    <textarea id="inputNote" placeholder="Poznámka"></textarea>
 
     <button id="saveBtn">Uložit</button>
   </div>
@@ -186,6 +186,14 @@
   ];
 
   let activeSlot = null;
+
+  const inputName = document.getElementById("inputName");
+  const inputTeam = document.getElementById("inputTeam");
+  const inputJourney = document.getElementById("inputJourney");
+  const inputSegment = document.getElementById("inputSegment");
+  const inputNote = document.getElementById("inputNote");
+  const saveBtn = document.getElementById("saveBtn");
+  const modal = document.getElementById("modal");
 
   function getNextWednesday(date) {
     const d = new Date(date);
@@ -264,21 +272,24 @@
 
   function fillForm(slot) {
     const d = slot.data || {};
-    name.value = d.name || "";
-    team.value = d.team || "";
-    journey.value = d.journey || "";
-    segment.value = d.segment || "";
-    note.value = d.note || "";
+    inputName.value = d.name || "";
+    inputTeam.value = d.team || "";
+    inputJourney.value = d.journey || "";
+    inputSegment.value = d.segment || "";
+    inputNote.value = d.note || "";
   }
 
   saveBtn.onclick = () => {
+    if (!activeSlot) return;
+
     activeSlot.data = {
-      name: name.value,
-      team: team.value,
-      journey: journey.value,
-      segment: segment.value,
-      note: note.value
+      name: inputName.value,
+      team: inputTeam.value,
+      journey: inputJourney.value,
+      segment: inputSegment.value,
+      note: inputNote.value
     };
+
     renderSlot(activeSlot);
     closeModal();
   };
