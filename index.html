@@ -1,840 +1,223 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <title>Lecture Feedback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Firebase SDK (compat verze – nejjednodušší v jednom souboru) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-  <!-- PrimeIcons (jen pro zavírací ikonu v modalu, můžeš klidně vyhodit) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons/primeicons.css">
-
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --accent: #16a34a;
-      --bg: #f5f5f7;
-      --card-bg: #ffffff;
-      --text-main: #111827;
-      --text-muted: #6b7280;
-      --border: #e5e7eb;
-      --radius: 14px;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      padding: 16px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .page {
-      width: 100%;
-      max-width: 900px;
-      background: var(--card-bg);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      padding: 18px 18px 26px;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    .subtitle {
-      margin: 2px 0 0;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .header-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-    }
-
-    .btn {
-      padding: 8px 14px;
-      border-radius: 999px;
-      border: none;
-      font-size: 14px;
-      cursor: pointer;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #ffffff;
-      box-shadow: 0 6px 18px rgba(22, 163, 74, 0.35);
-    }
-
-    .btn-primary:hover {
-      background: #15803d;
-    }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-main);
-    }
-
-    .btn-ghost:hover {
-      background: rgba(15, 23, 42, 0.06);
-    }
-
-    .date-info {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    main {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .top-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
-      gap: 16px;
-      align-items: flex-start;
-    }
-
-    @media (max-width: 768px) {
-      .page {
-        border-radius: 8px;
-        box-shadow: none;
-      }
-
-      .top-layout {
-        grid-template-columns: 1fr;
-      }
-
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .header-right {
-        align-items: flex-start;
-      }
-    }
-
-    .card {
-      background: #ffffff;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      padding: 14px 16px 16px;
-    }
-
-    .card-title {
-      margin: 0 0 4px;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .card-subtitle {
-      margin: 0 0 10px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .qr-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .qr-box {
-      background: #f9fafb;
-      padding: 8px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-    }
-
-    .qr-box img {
-      display: block;
-      width: 170px;
-      height: 170px;
-    }
-
-    .qr-caption {
-      font-size: 12px;
-      text-align: center;
-      color: var(--text-muted);
-      max-width: 260px;
-    }
-
-    .feedback-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .feedback-info {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    .feedback-card {
-      background: #f9fafb;
-      border-radius: 10px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      font-size: 13px;
-    }
-
-    .feedback-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-
-    .feedback-name {
-      font-weight: 600;
-    }
-
-    .feedback-date {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .feedback-ratings {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-
-    .feedback-ratings span {
-      background: #e5e7eb;
-      border-radius: 999px;
-      padding: 2px 8px;
-    }
-
-    .feedback-section-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-top: 4px;
-      margin-bottom: 2px;
-    }
-
-    .feedback-text {
-      margin: 0;
-      white-space: pre-wrap;
-    }
-
-    .feedback-empty {
-      font-size: 13px;
-      color: var(--text-muted);
-      text-align: center;
-      padding: 12px 4px;
-    }
-
-    /* ===== MODAL ===== */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-      z-index: 50;
-    }
-
-    .modal-overlay.open {
-      display: flex;
-    }
-
-    .modal {
-      background: #ffffff;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 440px;
-      padding: 18px 16px 16px;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.4);
-      animation: modalIn 0.18s ease-out;
-    }
-
-    @keyframes modalIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.98);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .modal-title {
-      margin: 0;
-      font-size: 17px;
-      font-weight: 600;
-    }
-
-    .modal-close {
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 18px;
-      color: var(--text-muted);
-      padding: 4px;
-      border-radius: 999px;
-    }
-
-    .modal-close:hover {
-      background: #f3f4f6;
-    }
-
-    .form-group {
-      margin-bottom: 10px;
-    }
-
-    .form-label {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .form-helper {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    select,
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 9px;
-      border: 1px solid var(--border);
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      background: #ffffff;
-      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-    }
-
-    select:focus,
-    input[type="text"]:focus,
-    textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 70px;
-    }
-
-    .rating-row {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .rating-select {
-      flex: 0 0 130px;
-    }
-
-    .buttons-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .btn-secondary {
-      flex: 1;
-      background: #f3f4f6;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      color: var(--text-main);
-      font-weight: 500;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn-secondary:hover {
-      background: #e5e7eb;
-    }
-
-    .btn-primary-wide {
-      flex: 1.4;
-      padding: 9px 12px;
-      border-radius: 999px;
-      border: none;
-      background: var(--primary);
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
-    }
-
-    .btn-primary-wide:hover {
-      background: var(--primary-dark);
-    }
-
-    .status {
-      margin-top: 8px;
-      font-size: 12px;
-      text-align: center;
-      display: none;
-    }
-
-    .status.ok {
-      display: block;
-      color: #16a34a;
-    }
-
-    .status.error {
-      display: block;
-      color: #b91c1c;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Lecture Feedback</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f5f5f7;
+            padding: 20px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .qr {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Feedback cards */
+        .fb-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        /* Modal overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Modal window */
+        .modal {
+            background: white;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 420px;
+            padding: 24px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: scale(0.95);}
+            to {opacity: 1; transform: scale(1);}
+        }
+
+        label { font-weight: 600; display: block; margin-top: 16px; }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+
+        textarea { resize: vertical; min-height: 80px; }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .primary { background: #2563eb; color: white; }
+        .secondary { background: #eee; }
+
+        .small {
+            margin-top: 4px;
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        .open-modal-btn {
+            margin: 20px auto;
+            padding: 12px 20px;
+            border-radius: 999px;
+            border: none;
+            background: #16a34a;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+        }
+
+    </style>
 </head>
 <body>
-  <div class="page">
-    <header>
-      <div>
-        <h1>Lecture Feedback</h1>
-        <p class="subtitle">
-          QR kód nahoře → otevře „Nový feedback“. Všechny odpovědi vidíš níže.
-        </p>
-      </div>
-      <div class="header-right">
-        <button class="btn btn-ghost" id="openFeedbackBtn">
-          <i class="pi pi-plus"></i>
-          Nový feedback
-        </button>
-        <div class="date-info" id="todayInfo"></div>
-      </div>
-    </header>
 
-    <main>
-      <div class="top-layout">
-        <!-- QR část -->
-        <section class="card">
-          <h2 class="card-title">QR kód na feedback</h2>
-          <p class="card-subtitle">
-            Tento QR kód odkazuje na tuto stránku s parametrem <code>?new=1</code>, takže se lidem rovnou otevře modal „New feedback“.
-          </p>
+    <h1>Feedback Overview</h1>
 
-          <div class="qr-wrapper">
-            <div class="qr-box">
-              <img id="qrImage" alt="QR kód na nový feedback">
-            </div>
-            <div class="qr-caption">
-              Vlož tento QR kód do slajdů / materiálů.  
-              Lidé otevřou stránku a hned uvidí formulář pro feedback.
-            </div>
-          </div>
-        </section>
-
-        <!-- Info část -->
-        <section class="card">
-          <h2 class="card-title">Co se sbírá</h2>
-          <p class="card-subtitle">
-            Každý feedback obsahuje:
-          </p>
-          <ul style="padding-left: 18px; margin: 0; font-size: 13px; color: var(--text-muted);">
-            <li>3 hodnocení (interesting, learned, enjoyed / 1–5).</li>
-            <li>Libovolný komentář („Any additional comments?“).</li>
-            <li>„Je něco, na co byste se chtěli příště zaměřit?“ – konkrétní přání.</li>
-            <li>Jméno – nepovinné, lze poslat anonymně.</li>
-            <li>Vše se ukládá do Firestore kolekce <code>Feedback</code>.</li>
-          </ul>
-        </section>
-      </div>
-
-      <!-- Seznam feedbacků -->
-      <section class="card">
-        <h2 class="card-title">Přijaté feedbacky</h2>
-        <p class="feedback-info" id="feedbackInfo">Načítám data z Firebase…</p>
-
-        <div class="feedback-list" id="feedbackList"></div>
-      </section>
-    </main>
-  </div>
-
-  <!-- MODAL: New feedback -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <h3 class="modal-title" id="modalTitle">New feedback</h3>
-        <button class="modal-close" id="modalCloseBtn" aria-label="Zavřít">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Did you find it interesting today?</label>
-        <div class="rating-row">
-          <select id="qInteresting" class="rating-select">
-            <option value="5">★★★★★ (5)</option>
-            <option value="4">★★★★☆ (4)</option>
-            <option value="3">★★★☆☆ (3)</option>
-            <option value="2">★★☆☆☆ (2)</option>
-            <option value="1">★☆☆☆☆ (1)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Did you learn something new today?</label>
-        <div class="rating-row">
-          <select id="qLearned" class="rating-select">
-            <option value="5">★★★★★ (5)</option>
-            <option value="4">★★★★☆ (4)</option>
-            <option value="3">★★★☆☆ (3)</option>
-            <option value="2">★★☆☆☆ (2)</option>
-            <option value="1">★☆☆☆☆ (1)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Did you enjoy it?</label>
-        <div class="rating-row">
-          <select id="qEnjoyed" class="rating-select">
-            <option value="5">★★★★★ (5)</option>
-            <option value="4">★★★★☆ (4)</option>
-            <option value="3">★★★☆☆ (3)</option>
-            <option value="2">★★☆☆☆ (2)</option>
-            <option value="1">★☆☆☆☆ (1)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Any additional comments?</label>
-        <textarea id="commentGeneral" placeholder="Anything you would like to share…"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Je něco, na co byste se chtěli příště zaměřit?</label>
-        <textarea id="commentNextTime" placeholder="Topic, activity, skill you would like to go deeper into next time…"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Name</label>
-        <input type="text" id="nameInput" placeholder="Your name (optional)">
-        <div class="form-helper">
-          Optional, you can send your feedback anonymously.
-        </div>
-      </div>
-
-      <div class="buttons-row">
-        <button class="btn-secondary" id="cancelBtn">Cancel</button>
-        <button class="btn-primary-wide" id="saveBtn">Save</button>
-      </div>
-
-      <div class="status" id="statusMessage"></div>
+    <!-- QR – zatím placeholder, můžeš nahradit vlastním -->
+    <div class="qr">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=YOUR_URL_HERE" alt="QR code">
     </div>
-  </div>
 
-  <script>
-    /****************************************
-     * 1) Firebase inicializace
-     ****************************************/
-    const firebaseConfig = {
-      apiKey: "TVŮJ_API_KEY",
-      authDomain: "TVŮJ_AUTH_DOMAIN",
-      projectId: "TVŮJ_PROJECT_ID",
-      storageBucket: "TVŮJ_STORAGE_BUCKET",
-      messagingSenderId: "TVŮJ_SENDER_ID",
-      appId: "TVŮJ_APP_ID"
-    };
+    <!-- tlačítko pro otevření modalu -->
+    <button class="open-modal-btn" id="openFeedback">Nový feedback</button>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const FEEDBACK_COLLECTION = "Feedback"; // /Feedback
+    <h2>Přijaté feedbacky</h2>
+    <div id="feedbackList"></div>
 
-    /****************************************
-     * 2) DOM prvky
-     ****************************************/
-    const todayInfoEl = document.getElementById("todayInfo");
-    const feedbackInfoEl = document.getElementById("feedbackInfo");
-    const feedbackListEl = document.getElementById("feedbackList");
+    <!-- MODAL -->
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <h2>New Feedback</h2>
 
-    const qrImageEl = document.getElementById("qrImage");
+            <label>Did you find it interesting today?</label>
+            <select id="q1">
+                <option value="5">★★★★★</option>
+                <option value="4">★★★★☆</option>
+                <option value="3">★★★☆☆</option>
+                <option value="2">★★☆☆☆</option>
+                <option value="1">★☆☆☆☆</option>
+            </select>
 
-    const modalOverlay = document.getElementById("modalOverlay");
-    const modalCloseBtn = document.getElementById("modalCloseBtn");
-    const openFeedbackBtn = document.getElementById("openFeedbackBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    const saveBtn = document.getElementById("saveBtn");
-    const statusMessageEl = document.getElementById("statusMessage");
+            <label>Did you learn something new?</label>
+            <select id="q2">
+                <option value="5">★★★★★</option>
+                <option value="4">★★★★☆</option>
+                <option value="3">★★★☆☆</option>
+                <option value="2">★★☆☆☆</option>
+                <option value="1">★☆☆☆☆</option>
+            </select>
 
-    const qInterestingEl = document.getElementById("qInteresting");
-    const qLearnedEl = document.getElementById("qLearned");
-    const qEnjoyedEl = document.getElementById("qEnjoyed");
-    const commentGeneralEl = document.getElementById("commentGeneral");
-    const commentNextTimeEl = document.getElementById("commentNextTime");
-    const nameInputEl = document.getElementById("nameInput");
+            <label>Did you enjoy it?</label>
+            <select id="q3">
+                <option value="5">★★★★★</option>
+                <option value="4">★★★★☆</option>
+                <option value="3">★★★☆☆</option>
+                <option value="2">★★☆☆☆</option>
+                <option value="1">★☆☆☆☆</option>
+            </select>
 
-    /****************************************
-     * 3) Zobrazení dnešního data
-     ****************************************/
-    const today = new Date();
-    todayInfoEl.textContent =
-      "Dnes je: " +
-      today.toLocaleDateString("cs-CZ", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
+            <label>What would you like to focus on next time?</label>
+            <textarea id="comment" placeholder="Your message..."></textarea>
 
-    /****************************************
-     * 4) QR kód: aktuální URL + ?new=1
-     ****************************************/
-    (function generateQrCode() {
-      const baseUrl = window.location.origin + window.location.pathname;
-      const targetUrl = baseUrl + "?new=1";
-      const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=";
-      qrImageEl.src = qrApi + encodeURIComponent(targetUrl);
-    })();
+            <label>Name</label>
+            <input id="name" placeholder="Your name">
+            <div class="small">Optional, you can send anonymously</div>
 
-    /****************************************
-     * 5) Modal logika
-     ****************************************/
-    function resetForm() {
-      qInterestingEl.value = "5";
-      qLearnedEl.value = "5";
-      qEnjoyedEl.value = "5";
-      commentGeneralEl.value = "";
-      commentNextTimeEl.value = "";
-      nameInputEl.value = "";
-      statusMessageEl.style.display = "none";
-      statusMessageEl.textContent = "";
-      statusMessageEl.className = "status";
-    }
+            <div class="btn-row">
+                <button class="btn secondary" id="cancel">Cancel</button>
+                <button class="btn primary" id="save">Save</button>
+            </div>
+        </div>
+    </div>
 
-    function openModal() {
-      resetForm();
-      modalOverlay.classList.add("open");
-    }
+    <script>
+        const overlay = document.getElementById('overlay');
+        const openBtn = document.getElementById('openFeedback');
+        const cancelBtn = document.getElementById('cancel');
+        const saveBtn = document.getElementById('save');
+        const feedbackList = document.getElementById('feedbackList');
 
-    function closeModal() {
-      modalOverlay.classList.remove("open");
-    }
+        // Otevření modalu
+        openBtn.onclick = () => overlay.style.display = 'flex';
+        cancelBtn.onclick = () => overlay.style.display = 'none';
 
-    openFeedbackBtn.addEventListener("click", openModal);
-    modalCloseBtn.addEventListener("click", closeModal);
-    cancelBtn.addEventListener("click", closeModal);
+        // Načtení uložených feedbacků
+        let feedbacks = JSON.parse(localStorage.getItem("feedbacks") || "[]");
+        renderFeedbacks();
 
-    // Kliknutí mimo modal zavře okno
-    modalOverlay.addEventListener("click", (e) => {
-      if (e.target === modalOverlay) {
-        closeModal();
-      }
-    });
+        function renderFeedbacks() {
+            feedbackList.innerHTML = "";
 
-    // Auto-otevření modalu, pokud je v URL ?new=1
-    (function autoOpenModalFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("new") === "1") {
-        openModal();
-      }
-    })();
-
-    /****************************************
-     * 6) Uložení feedbacku do Firestore
-     ****************************************/
-    saveBtn.addEventListener("click", async () => {
-      statusMessageEl.style.display = "none";
-
-      const interesting = parseInt(qInterestingEl.value, 10);
-      const learned = parseInt(qLearnedEl.value, 10);
-      const enjoyed = parseInt(qEnjoyedEl.value, 10);
-      const commentGeneral = commentGeneralEl.value.trim();
-      const commentNextTime = commentNextTimeEl.value.trim();
-      const name = nameInputEl.value.trim();
-
-      if (!interesting || !learned || !enjoyed) {
-        statusMessageEl.textContent = "Prosím vyplň hodnocení všech tří otázek.";
-        statusMessageEl.className = "status error";
-        return;
-      }
-
-      const feedbackData = {
-        interesting,
-        learned,
-        enjoyed,
-        commentGeneral,
-        commentNextTime,
-        name,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-
-      try {
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Saving…";
-
-        await db.collection(FEEDBACK_COLLECTION).add(feedbackData);
-
-        statusMessageEl.textContent = "Thanks for your feedback! 🙏";
-        statusMessageEl.className = "status ok";
-        statusMessageEl.style.display = "block";
-
-        setTimeout(() => {
-          closeModal();
-          saveBtn.disabled = false;
-          saveBtn.textContent = "Save";
-        }, 800);
-      } catch (err) {
-        console.error("Error saving feedback:", err);
-        statusMessageEl.textContent = "Something went wrong. Please try again.";
-        statusMessageEl.className = "status error";
-        statusMessageEl.style.display = "block";
-        saveBtn.disabled = false;
-        saveBtn.textContent = "Save";
-      }
-    });
-
-    /****************************************
-     * 7) Realtime načítání feedbacků z Firestore
-     ****************************************/
-    db.collection(FEEDBACK_COLLECTION)
-      .orderBy("createdAt", "desc")
-      .onSnapshot(
-        (snapshot) => {
-          feedbackListEl.innerHTML = "";
-
-          if (snapshot.empty) {
-            feedbackInfoEl.textContent = "Zatím nemáš žádný feedback.";
-            const p = document.createElement("p");
-            p.className = "feedback-empty";
-            p.textContent = "Jakmile někdo vyplní formulář, uvidíš ho tady.";
-            feedbackListEl.appendChild(p);
-            return;
-          }
-
-          feedbackInfoEl.textContent =
-            "Feedbacky se načítají živě z Firebase (kolekce „Feedback“).";
-
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            const card = document.createElement("div");
-            card.className = "feedback-card";
-
-            const header = document.createElement("div");
-            header.className = "feedback-header";
-
-            const nameEl = document.createElement("div");
-            nameEl.className = "feedback-name";
-            nameEl.textContent =
-              data.name && data.name.trim() !== "" ? data.name : "Anonymous";
-
-            const dateEl = document.createElement("div");
-            dateEl.className = "feedback-date";
-
-            if (data.createdAt && data.createdAt.toDate) {
-              const d = data.createdAt.toDate();
-              dateEl.textContent = d.toLocaleString("cs-CZ", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-              });
-            } else {
-              dateEl.textContent = "";
+            if (feedbacks.length === 0) {
+                feedbackList.innerHTML = "<p>Žádný feedback zatím nebyl přidán.</p>";
+                return;
             }
 
-            header.appendChild(nameEl);
-            header.appendChild(dateEl);
-            card.appendChild(header);
-
-            const ratings = document.createElement("div");
-            ratings.className = "feedback-ratings";
-            ratings.innerHTML = `
-              <span>Interesting: ${data.interesting ?? "-"} / 5</span>
-              <span>Learned: ${data.learned ?? "-"} / 5</span>
-              <span>Enjoyed: ${data.enjoyed ?? "-"} / 5</span>
-            `;
-            card.appendChild(ratings);
-
-            if (data.commentGeneral && data.commentGeneral.trim() !== "") {
-              const label = document.createElement("div");
-              label.className = "feedback-section-label";
-              label.textContent = "Comment";
-              card.appendChild(label);
-
-              const text = document.createElement("p");
-              text.className = "feedback-text";
-              text.textContent = data.commentGeneral;
-              card.appendChild(text);
-            }
-
-            if (data.commentNextTime && data.commentNextTime.trim() !== "") {
-              const label = document.createElement("div");
-              label.className = "feedback-section-label";
-              label.textContent = "Next time focus";
-              card.appendChild(label);
-
-              const text = document.createElement("p");
-              text.className = "feedback-text";
-              text.textContent = data.commentNextTime;
-              card.appendChild(text);
-            }
-
-            feedbackListEl.appendChild(card);
-          });
-        },
-        (error) => {
-          console.error("Error loading feedback:", error);
-          feedbackInfoEl.textContent =
-            "Nepodařilo se načíst data z Firebase. Zkontroluj konfiguraci a Firestore pravidla.";
+            feedbacks.forEach(fb => {
+                const div = document.createElement("div");
+                div.className = "fb-card";
+                div.innerHTML = `
+                    <strong>${fb.name || "Anonymous"}</strong><br>
+                    <div>Interesting: ${fb.q1}/5</div>
+                    <div>Learned: ${fb.q2}/5</div>
+                    <div>Enjoyed: ${fb.q3}/5</div>
+                    <p>${fb.comment}</p>
+                `;
+                feedbackList.appendChild(div);
+            });
         }
-      );
-  </script>
+
+        // Uložení feedbacku
+        saveBtn.onclick = () => {
+            const entry = {
+                q1: document.getElementById("q1").value,
+                q2: document.getElementById("q2").value,
+                q3: document.getElementById("q3").value,
+                comment: document.getElementById("comment").value,
+                name: document.getElementById("name").value
+            };
+
+            feedbacks.push(entry);
+            localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
+
+            overlay.style.display = "none";
+            renderFeedbacks();
+        };
+    </script>
 </body>
 </html>
-``
