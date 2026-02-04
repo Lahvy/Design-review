@@ -2,245 +2,367 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <title>Lecture Feedback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Design Review Planner</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- PrimeIcons pro popelnici -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons/primeicons.css">
 
   <style>
     body {
       font-family: system-ui, sans-serif;
-      background: #f5f5f7;
-      padding: 20px;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      text-align: center;
-    }
-
-    .qr {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-
-    /* Feedback cards */
-    .fb-card {
-      background: white;
-      border-radius: 10px;
+      background: #f5f5f5;
+      margin: 0;
       padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
-
-    /* Modal overlay */
-    .overlay {
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    h1 { margin: 0; font-size: 22px; }
+    button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #222;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #todayInfo {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #333;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .instructions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: #333;
+    }
+    .instructions button {
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #000;
+      color: white;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+    .instructions button:hover { background: #333; }
+    .slot {
+      background: #eee;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      position: relative;
+    }
+    .slot.occupied { background: #f0f9f5; }
+    .slot-time { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .slot-name { font-weight: 600; font-size: 14px; }
+    .slot-meta { font-size: 12px; color: #555; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+    .badge.smb { background: #d0e7ff; color: #004a8f; }
+    .badge.retail { background: #ffd6d6; color: #8f0000; }
+    .delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: black;
+    }
+    .delete i {
+      font-size: 16px;
+      color: black;
+      cursor: pointer;
+    }
+    .delete:hover i { opacity: 0.7; }
+    /* MODAL pro sloty */
+    .modal {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.5);
       display: none;
       justify-content: center;
       align-items: center;
-      padding: 20px;
-      z-index: 1000;
+      padding: 16px;
     }
-
-    /* Modal - PERFECT RESPONSIVE FIX */
-    .modal {
+    .modal.open { display: flex; }
+    .modal-content {
       background: white;
-      border-radius: 14px;
+      border-radius: 12px;
+      padding: 20px;
       width: 100%;
-      max-width: 420px;
-      padding: 24px;
-      animation: fadeIn 0.2s ease;
-      max-height: 85vh;     /* modal nikdy nebude větší než okno */
-      overflow-y: auto;      /* skroluje se jen modal, ne celá stránka */
+      max-width: 400px;
+    }
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
       box-sizing: border-box;
     }
-
-    @keyframes fadeIn {
-      from {opacity: 0; transform: scale(0.95);}
-      to   {opacity: 1; transform: scale(1);}
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 16px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 70px;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 12px;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .primary { background: #2563eb; color: white; }
-    .primary:hover { background: #1d4ed8; }
-
-    .secondary { background: #eee; }
-    .secondary:hover { background: #ddd; }
-
-    .open-modal-btn {
-      margin: 20px auto;
-      padding: 12px 20px;
-      border-radius: 999px;
-      border: none;
-      background: #16a34a;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      display: block;
-    }
-
-    .open-modal-btn:hover {
-      background: #15803d;
-    }
+    /* MODAL pro poznámku Honzy */
+    #honzaModal .modal-content textarea { min-height: 60px; resize: vertical; }
+    #honzaModal .modal-info { font-size: 12px; color: #666; margin-bottom: 8px; }
+    #honzaModal button { padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-right: 8px; }
+    #honzaModal .save-btn { background: #222; color: white; border: none; }
+    #honzaModal .cancel-btn { background: #eee; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
 
-  <h1>Feedback Overview</h1>
+<header>
+  <h1>Design Review</h1>
+  <button>Historie</button>
+</header>
 
-  <!-- QR – placeholder -->
-  <div class="qr">
-    https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=YOUR_URL_HERE
+<div id="todayInfo"></div>
+<div class="cards" id="cards"></div>
+
+<!-- MODAL pro sloty -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Přihlášení na slot</h3>
+    <input id="inputName" placeholder="Jméno" />
+    <input id="inputTeam" placeholder="Tým" />
+    <input id="inputJourney" placeholder="Název cesty" />
+    <select id="inputSegment">
+      <option value="">Segment</option>
+      <option value="SMB">SMB</option>
+      <option value="Retail">Retail</option>
+    </select>
+    <textarea id="inputNote" placeholder="Poznámka"></textarea>
+    <button id="saveBtn">Uložit</button>
   </div>
+</div>
 
-  <button class="open-modal-btn" id="openFeedback">Nový feedback</button>
-
-  <h2>Přijaté feedbacky</h2>
-  <div id="feedbackList"></div>
-
-  <!-- MODAL -->
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <h2>New Feedback</h2>
-
-      <label>Did you find it interesting today?</label>
-      <select id="q1">
-        <option value="5">★★★★★</option>
-        <option value="4">★★★★☆</option>
-        <option value="3">★★★☆☆</option>
-        <option value="2">★★☆☆☆</option>
-        <option value="1">★☆☆☆☆</option>
-      </select>
-
-      <label>Did you learn something new?</label>
-      <select id="q2">
-        <option value="5">★★★★★</option>
-        <option value="4">★★★★☆</option>
-        <option value="3">★★★☆☆</option>
-        <option value="2">★★☆☆☆</option>
-        <option value="1">★☆☆☆☆</option>
-      </select>
-
-      <label>Did you enjoy it?</label>
-      <select id="q3">
-        <option value="5">★★★★★</option>
-        <option value="4">★★★★☆</option>
-        <option value="3">★★★☆☆</option>
-        <option value="2">★★☆☆☆</option>
-        <option value="1">★☆☆☆☆</option>
-      </select>
-
-      <!-- 🔥 INPUT 1 -->
-      <label>Je něco, na co byste se chtěli příště zaměřit?</label>
-      <textarea id="commentFocus" placeholder="Co by vás zajímalo příště?"></textarea>
-
-      <!-- 🔥 INPUT 2 -->
-      <label>Nějaký další komentář?</label>
-      <textarea id="commentGeneral" placeholder="Další poznámka..."></textarea>
-
-      <!-- 🔥 INPUT 3 -->
-      <label>Jméno</label>
-      <input id="name" placeholder="Vaše jméno (volitelné)">
-      <div style="font-size: 0.8rem; color:#666;">Optional, you can send anonymously</div>
-
-      <div class="btn-row">
-        <button class="btn secondary" id="cancel">Cancel</button>
-        <button class="btn primary" id="save">Save</button>
-      </div>
+<!-- MODAL pro poznámku Honzy -->
+<div class="modal" id="honzaModal">
+  <div class="modal-content">
+    <h3>Poznámka Honzy Kemzy</h3>
+    <textarea id="honzaInput"></textarea>
+    <div class="modal-info">Poznámku smí vyplnit jen Honza Kemza nebo jiná zmocněná osoba.</div>
+    <div>
+      <button class="save-btn" id="honzaSaveBtn">Uložit</button>
+      <button class="cancel-btn" id="honzaCancelBtn">Storno</button>
     </div>
   </div>
+</div>
 
-  <script>
-    const overlay = document.getElementById('overlay');
-    const openBtn = document.getElementById('openFeedback');
-    const cancelBtn = document.getElementById('cancel');
-    const saveBtn = document.getElementById('save');
-    const feedbackList = document.getElementById('feedbackList');
+<script>
+const firebaseConfig = {
+  apiKey: "TVŮJ_API_KEY",
+  authDomain: "design-review-data.firebaseapp.com",
+  projectId: "design-review-data",
+  storageBucket: "design-review-data.appspot.com",
+  messagingSenderId: "TVŮJ_SENDER_ID",
+  appId: "TVŮJ_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-    openBtn.onclick = () => overlay.style.display = 'flex';
-    cancelBtn.onclick = () => overlay.style.display = 'none';
+const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
+let activeSlot = null;
 
-    let feedbacks = JSON.parse(localStorage.getItem("feedbacks") || "[]");
-    renderFeedbacks();
+const inputName = document.getElementById("inputName");
+const inputTeam = document.getElementById("inputTeam");
+const inputJourney = document.getElementById("inputJourney");
+const inputSegment = document.getElementById("inputSegment");
+const inputNote = document.getElementById("inputNote");
+const saveBtn = document.getElementById("saveBtn");
+const modal = document.getElementById("modal");
 
-    function renderFeedbacks() {
-      feedbackList.innerHTML = "";
+// Dnes je
+document.getElementById("todayInfo").textContent = "Dnes je: " + new Date().toLocaleDateString("cs-CZ", {
+  weekday:"long", day:"numeric", month:"long", year:"numeric"
+});
 
-      if (feedbacks.length === 0) {
-        feedbackList.innerHTML = "<p>Žádný feedback zatím nebyl přidán.</p>";
-        return;
-      }
+function getNextWednesday(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + (3 - d.getDay() + 7) % 7);
+  return d;
+}
 
-      feedbacks.forEach(fb => {
-        const div = document.createElement("div");
-        div.className = "fb-card";
-        div.innerHTML = `
-          <strong>${fb.name || "Anonymous"}</strong><br>
-          <div>Interesting: ${fb.q1}/5</div>
-          <div>Learned: ${fb.q2}/5</div>
-          <div>Enjoyed: ${fb.q3}/5</div>
-          <p><strong>Next time focus:</strong><br>${fb.commentFocus}</p>
-          <p><strong>Comment:</strong><br>${fb.commentGeneral}</p>
-        `;
-        feedbackList.appendChild(div);
-      });
-    }
+async function renderCards() {
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
 
-    saveBtn.onclick = () => {
-      const entry = {
-        q1: document.getElementById("q1").value,
-        q2: document.getElementById("q2").value,
-        q3: document.getElementById("q3").value,
-        commentFocus: document.getElementById("commentFocus").value,
-        commentGeneral: document.getElementById("commentGeneral").value,
-        name: document.getElementById("name").value
+  const snapshot = await db.collection("slots").get();
+  const slotsFromDb = {};
+  snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
+
+  let day = getNextWednesday(new Date());
+
+  for (let i = 0; i < 4; i++) {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const dateStr = day.toLocaleDateString("cs-CZ", { weekday:"long", day:"numeric", month:"long" });
+    const title = document.createElement("h2");
+    title.textContent = dateStr;
+    card.appendChild(title);
+
+    // ===== Pokyny Honzy Kemzy s modalem =====
+    const instructionsDiv = document.createElement("div");
+    instructionsDiv.className = "instructions";
+    const instructionsDocId = dateStr + " instructions";
+    const currentText = slotsFromDb[instructionsDocId]?.text || "";
+
+    const addButton = document.createElement("button");
+    addButton.textContent = currentText || "Přidat poznámku Honzy Kemzy";
+    instructionsDiv.appendChild(addButton);
+
+    addButton.onclick = () => {
+      const honzaModal = document.getElementById("honzaModal");
+      const honzaInput = document.getElementById("honzaInput");
+      honzaInput.value = slotsFromDb[instructionsDocId]?.text || "";
+      honzaModal.classList.add("open");
+
+      const saveBtnModal = document.getElementById("honzaSaveBtn");
+      const cancelBtnModal = document.getElementById("honzaCancelBtn");
+
+      saveBtnModal.onclick = async () => {
+        await db.collection("slots").doc(instructionsDocId).set({ text: honzaInput.value });
+        addButton.textContent = honzaInput.value || "Přidat poznámku Honzy Kemzy";
+        slotsFromDb[instructionsDocId] = { text: honzaInput.value };
+        honzaModal.classList.remove("open");
       };
 
-      feedbacks.push(entry);
-      localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
-
-      overlay.style.display = "none";
-      renderFeedbacks();
+      cancelBtnModal.onclick = () => { honzaModal.classList.remove("open"); };
     };
-  </script>
+
+    document.getElementById("honzaModal").onclick = e => {
+      if(e.target.id === "honzaModal") e.target.classList.remove("open");
+    };
+
+    card.appendChild(instructionsDiv);
+
+    // ===== sloty =====
+    defaultSlots.forEach(time => {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      slot.dataset.time = time;
+
+      const docId = dateStr + " " + time;
+      if (slotsFromDb[docId]) slot.data = slotsFromDb[docId];
+
+      renderSlot(slot);
+
+      slot.addEventListener("click", e => {
+        if (e.target.closest(".delete")) return;
+        activeSlot = slot;
+        fillForm(slot);
+        openModal();
+      });
+
+      card.appendChild(slot);
+    });
+
+    container.appendChild(card);
+    day.setDate(day.getDate() + 7);
+  }
+}
+
+function renderSlot(slot) {
+  const data = slot.data;
+  if (!data) {
+    slot.classList.remove("occupied");
+    slot.innerHTML = `<div class="slot-time">${slot.dataset.time}</div>`;
+    return;
+  }
+
+  slot.classList.add("occupied");
+  slot.innerHTML = `
+    <div class="delete"><i class="pi pi-trash"></i></div>
+    <div class="slot-time">${slot.dataset.time}</div>
+    <div class="slot-name">${data.name}</div>
+    <div class="slot-meta">${data.team} · ${data.journey}</div>
+    <span class="badge ${data.segment === "SMB"?"smb":"retail"}">${data.segment}</span>
+  `;
+
+  slot.querySelector(".delete").onclick = async (e) => {
+    e.stopPropagation(); // zabránit otevření modalu
+    if (confirm("Opravdu chcete smazat přihlášku?")) {
+      const docId = slot.closest(".card").querySelector("h2").textContent + " " + slot.dataset.time;
+      await db.collection("slots").doc(docId).delete();
+      slot.data = null;
+      renderSlot(slot);
+    }
+  };
+}
+
+function fillForm(slot) {
+  const d = slot.data || {};
+  inputName.value = d.name || "";
+  inputTeam.value = d.team || "";
+  inputJourney.value = d.journey || "";
+  inputSegment.value = d.segment || "";
+  inputNote.value = d.note || "";
+}
+
+saveBtn.onclick = async () => {
+  if (!activeSlot) return;
+
+  const slotData = {
+    time: activeSlot.dataset.time,
+    name: inputName.value,
+    team: inputTeam.value,
+    journey: inputJourney.value,
+    segment: inputSegment.value,
+    note: inputNote.value,
+    date: activeSlot.closest(".card").querySelector("h2").textContent
+  };
+
+  await db.collection("slots").doc(slotData.date + " " + slotData.time).set(slotData);
+
+  activeSlot.data = slotData;
+  renderSlot(activeSlot);
+  closeModal();
+};
+
+function openModal() { modal.classList.add("open"); }
+function closeModal() { modal.classList.remove("open"); }
+modal.onclick = e => { if (e.target === modal) closeModal(); };
+
+renderCards();
+</script>
 
 </body>
 </html>
