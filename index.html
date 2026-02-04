@@ -45,7 +45,7 @@
       z-index: 1000;
     }
 
-    /* MODAL — FIX: 100% RESPONSIVE + SCROLLABLE */
+    /* Modal - PERFECT RESPONSIVE FIX */
     .modal {
       background: white;
       border-radius: 14px;
@@ -53,9 +53,9 @@
       max-width: 420px;
       padding: 24px;
       animation: fadeIn 0.2s ease;
-      max-height: 90vh;      /* NEW */
-      overflow-y: auto;       /* NEW */
-      box-sizing: border-box; /* jistota */
+      max-height: 85vh;     /* modal nikdy nebude větší než okno */
+      overflow-y: auto;      /* skroluje se jen modal, ne celá stránka */
+      box-sizing: border-box;
     }
 
     @keyframes fadeIn {
@@ -78,9 +78,9 @@
       font-size: 1rem;
     }
 
-    textarea { 
+    textarea {
       resize: vertical;
-      min-height: 80px;
+      min-height: 70px;
     }
 
     .btn-row {
@@ -105,12 +105,6 @@
     .secondary { background: #eee; }
     .secondary:hover { background: #ddd; }
 
-    .small {
-      margin-top: 4px;
-      font-size: 0.8rem;
-      color: #777;
-    }
-
     .open-modal-btn {
       margin: 20px auto;
       padding: 12px 20px;
@@ -132,12 +126,11 @@
 
   <h1>Feedback Overview</h1>
 
-  <!-- QR – zatím placeholder -->
+  <!-- QR – placeholder -->
   <div class="qr">
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=YOUR_URL_HERE">
+    https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=YOUR_URL_HERE
   </div>
 
-  <!-- tlačítko -->
   <button class="open-modal-btn" id="openFeedback">Nový feedback</button>
 
   <h2>Přijaté feedbacky</h2>
@@ -175,17 +168,18 @@
         <option value="1">★☆☆☆☆</option>
       </select>
 
-      <!-- NEW FIELD 1 -->
-      <label>Any additional comments?</label>
-      <textarea id="commentGeneral" placeholder="Your message..."></textarea>
-
-      <!-- NEW FIELD 2 -->
+      <!-- 🔥 INPUT 1 -->
       <label>Je něco, na co byste se chtěli příště zaměřit?</label>
-      <textarea id="commentFocus" placeholder="Napište, co by vás zajímalo příště..."></textarea>
+      <textarea id="commentFocus" placeholder="Co by vás zajímalo příště?"></textarea>
 
-      <label>Name</label>
-      <input id="name" placeholder="Your name (optional)">
-      <div class="small">Optional, you can send anonymously</div>
+      <!-- 🔥 INPUT 2 -->
+      <label>Nějaký další komentář?</label>
+      <textarea id="commentGeneral" placeholder="Další poznámka..."></textarea>
+
+      <!-- 🔥 INPUT 3 -->
+      <label>Jméno</label>
+      <input id="name" placeholder="Vaše jméno (volitelné)">
+      <div style="font-size: 0.8rem; color:#666;">Optional, you can send anonymously</div>
 
       <div class="btn-row">
         <button class="btn secondary" id="cancel">Cancel</button>
@@ -201,11 +195,9 @@
     const saveBtn = document.getElementById('save');
     const feedbackList = document.getElementById('feedbackList');
 
-    // Open modal
     openBtn.onclick = () => overlay.style.display = 'flex';
     cancelBtn.onclick = () => overlay.style.display = 'none';
 
-    // Load from localStorage
     let feedbacks = JSON.parse(localStorage.getItem("feedbacks") || "[]");
     renderFeedbacks();
 
@@ -225,21 +217,20 @@
           <div>Interesting: ${fb.q1}/5</div>
           <div>Learned: ${fb.q2}/5</div>
           <div>Enjoyed: ${fb.q3}/5</div>
-          <p><strong>Comments:</strong><br>${fb.commentGeneral}</p>
           <p><strong>Next time focus:</strong><br>${fb.commentFocus}</p>
+          <p><strong>Comment:</strong><br>${fb.commentGeneral}</p>
         `;
         feedbackList.appendChild(div);
       });
     }
 
-    // Save feedback
     saveBtn.onclick = () => {
       const entry = {
         q1: document.getElementById("q1").value,
         q2: document.getElementById("q2").value,
         q3: document.getElementById("q3").value,
-        commentGeneral: document.getElementById("commentGeneral").value,
         commentFocus: document.getElementById("commentFocus").value,
+        commentGeneral: document.getElementById("commentGeneral").value,
         name: document.getElementById("name").value
       };
 
@@ -250,5 +241,6 @@
       renderFeedbacks();
     };
   </script>
+
 </body>
 </html>
