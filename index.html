@@ -5,224 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Design Review Planner</title>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-  <!-- PrimeIcons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons/primeicons.css">
 
   <style>
     * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background:#f5f5f5; margin:0; padding:12px; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    h1 { margin:0; font-size:20px; }
+    button { padding:8px 12px; border-radius:8px; border:none; background:#222; color:#fff; cursor:pointer; }
+    .secondary { background:#eee; color:#333; font-size:12px; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+    .card { background:#fff; border-radius:14px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,.08); display:flex; flex-direction:column; gap:12px; }
 
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+    .card-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
     }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
+    .slot { background:#eee; border-radius:10px; padding:12px; cursor:pointer; position:relative; }
+    .slot.occupied { background:#f0f9f5; }
+    .slot-time { font-size:12px; color:#666; }
+    .slot-name { font-weight:600; }
+    .delete { position:absolute; top:8px; right:8px; cursor:pointer; }
+
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; justify-content:center; align-items:flex-end; padding:12px; }
+    .modal.open { display:flex; }
+    .modal-content { background:#fff; width:100%; max-width:480px; border-radius:16px 16px 0 0; padding:20px; }
+
+    input, textarea, select {
+      width:100%;
+      padding:8px;
+      margin-bottom:8px;
+      border-radius:6px;
+      border:1px solid #ccc;
     }
 
-    h1 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.2;
-    }
-
-    button {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: none;
-      background: #222;
-      color: white;
-      font-size: 14px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    #todayInfo {
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #333;
-    }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .card h2 {
-      margin: 0 0 4px;
-      font-size: 16px;
-    }
-
-    .instructions {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 13px;
-      color: #333;
-    }
-
-    .instructions button {
-      padding: 8px 12px;
-      font-size: 13px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      background: #000;
-      color: white;
-      align-self: flex-start;
-    }
-
-    .slot {
-      background: #eee;
-      border-radius: 10px;
-      padding: 12px;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .slot.occupied { background: #f0f9f5; }
-
-    .slot-time {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 4px;
-    }
-
-    .slot-name {
-      font-weight: 600;
-      font-size: 15px;
-    }
-
-    .slot-meta {
-      font-size: 13px;
-      color: #555;
-      margin-top: 2px;
-    }
-
-    .badge {
-      display: inline-block;
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 8px;
-      margin-top: 6px;
-      width: fit-content;
-    }
-
-    .badge.smb { background: #d0e7ff; color: #004a8f; }
-    .badge.retail { background: #ffd6d6; color: #8f0000; }
-
-    .delete {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    /* ===== MODAL ===== */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      justify-content: center;
-      align-items: flex-end;
-      padding: 12px;
-    }
-
-    .modal.open { display: flex; }
-
-    .modal-content {
-      background: white;
-      border-radius: 16px 16px 0 0;
-      padding: 20px;
-      width: 100%;
-      max-width: 480px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal-content h3 {
-      margin-top: 0;
-      font-size: 18px;
-    }
-
-    .modal-content input,
-    .modal-content select,
-    .modal-content textarea {
-      width: 100%;
-      margin-bottom: 12px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-    }
-
-    /* Honza modal */
-    #honzaModal .modal-content textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-
-    #honzaModal .modal-info {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-
-    #honzaModal button {
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-right: 8px;
-    }
-
-    #honzaModal .save-btn {
-      background: #222;
-      color: white;
-      border: none;
-    }
-
-    #honzaModal .cancel-btn {
-      background: #eee;
-      border: 1px solid #ccc;
-    }
-
-    /* ===== DESKTOP ENHANCEMENT ===== */
-    @media (min-width: 768px) {
-      body { padding: 20px; }
-
-      .modal {
-        align-items: center;
-      }
-
-      .modal-content {
-        border-radius: 16px;
-      }
+    .slot-editor-row {
+      display:flex;
+      gap:8px;
+      margin-bottom:6px;
     }
   </style>
 </head>
@@ -237,7 +62,7 @@
 <div id="todayInfo"></div>
 <div class="cards" id="cards"></div>
 
-<!-- MODAL pro sloty -->
+<!-- MODAL slot -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3>Přihlášení na slot</h3>
@@ -254,192 +79,192 @@
   </div>
 </div>
 
-<!-- MODAL Honza -->
-<div class="modal" id="honzaModal">
+<!-- MODAL slot config -->
+<div class="modal" id="slotsConfigModal">
   <div class="modal-content">
-    <h3>Poznámka Honzy Kemzy</h3>
-    <textarea id="honzaInput"></textarea>
-    <div class="modal-info">
-      Poznámku smí vyplnit jen Honza Kemza nebo jiná zmocněná osoba.
-    </div>
-    <div>
-      <button class="save-btn" id="honzaSaveBtn">Uložit</button>
-      <button class="cancel-btn" id="honzaCancelBtn">Storno</button>
-    </div>
+    <h3>Upravit sloty</h3>
+    <div id="slotsEditor"></div>
+    <button class="secondary" id="addSlotBtn">+ Přidat slot</button>
+    <br><br>
+    <button id="saveSlotsConfig">Uložit změny</button>
   </div>
 </div>
 
 <script>
-  // 🔹 TADY ZŮSTÁVÁ TVŮJ PŮVODNÍ JS BEZE ZMĚN 🔹
-  // (nekrátil jsem ho, jen jsem ho přesunul beze změny)
+const firebaseConfig = {
+  apiKey: "TVŮJ_API_KEY",
+  authDomain: "design-review-data.firebaseapp.com",
+  projectId: "design-review-data"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  const firebaseConfig = {
-    apiKey: "TVŮJ_API_KEY",
-    authDomain: "design-review-data.firebaseapp.com",
-    projectId: "design-review-data",
-    storageBucket: "design-review-data.appspot.com",
-    messagingSenderId: "TVŮJ_SENDER_ID",
-    appId: "TVŮJ_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
+let activeSlot = null;
+let activeDateForSlots = null;
 
-  const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
-  let activeSlot = null;
+const inputName = inputName = document.getElementById("inputName");
+const inputTeam = document.getElementById("inputTeam");
+const inputJourney = document.getElementById("inputJourney");
+const inputSegment = document.getElementById("inputSegment");
+const inputNote = document.getElementById("inputNote");
+const modal = document.getElementById("modal");
 
-  const inputName = document.getElementById("inputName");
-  const inputTeam = document.getElementById("inputTeam");
-  const inputJourney = document.getElementById("inputJourney");
-  const inputSegment = document.getElementById("inputSegment");
-  const inputNote = document.getElementById("inputNote");
-  const saveBtn = document.getElementById("saveBtn");
-  const modal = document.getElementById("modal");
+document.getElementById("todayInfo").textContent =
+  "Dnes je: " + new Date().toLocaleDateString("cs-CZ", {
+    weekday:"long", day:"numeric", month:"long", year:"numeric"
+  });
 
-  document.getElementById("todayInfo").textContent =
-    "Dnes je: " + new Date().toLocaleDateString("cs-CZ", {
-      weekday:"long", day:"numeric", month:"long", year:"numeric"
-    });
+function getNextWednesday(d){
+  d=new Date(d);
+  d.setDate(d.getDate()+(3-d.getDay()+7)%7);
+  return d;
+}
 
-  function getNextWednesday(date) {
-    const d = new Date(date);
-    d.setDate(d.getDate() + (3 - d.getDay() + 7) % 7);
-    return d;
-  }
+async function renderCards(){
+  const container=document.getElementById("cards");
+  container.innerHTML="";
 
-  async function renderCards() {
-    const container = document.getElementById("cards");
-    container.innerHTML = "";
+  const snapshot = await db.collection("slots").get();
+  const slotsFromDb = {};
+  snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
 
-    const snapshot = await db.collection("slots").get();
-    const slotsFromDb = {};
-    snapshot.forEach(doc => slotsFromDb[doc.id] = doc.data());
+  let day=getNextWednesday(new Date());
 
-    let day = getNextWednesday(new Date());
+  for(let i=0;i<4;i++){
+    const dateStr=day.toLocaleDateString("cs-CZ",{weekday:"long",day:"numeric",month:"long"});
 
-    for (let i = 0; i < 4; i++) {
-      const card = document.createElement("div");
-      card.className = "card";
+    const configDoc = await db.collection("slots-config").doc(dateStr).get();
+    const slots = configDoc.exists ? configDoc.data().slots : defaultSlots;
 
-      const dateStr = day.toLocaleDateString("cs-CZ", { weekday:"long", day:"numeric", month:"long" });
-      const title = document.createElement("h2");
-      title.textContent = dateStr;
-      card.appendChild(title);
+    const card=document.createElement("div");
+    card.className="card";
 
-      const instructionsDiv = document.createElement("div");
-      instructionsDiv.className = "instructions";
-      const instructionsDocId = dateStr + " instructions";
-      const currentText = slotsFromDb[instructionsDocId]?.text || "";
+    const header=document.createElement("div");
+    header.className="card-header";
+    header.innerHTML = `<strong>${dateStr}</strong>`;
+    const editBtn=document.createElement("button");
+    editBtn.textContent="Upravit sloty";
+    editBtn.className="secondary";
+    editBtn.onclick=()=>openSlotsConfig(dateStr, slots);
+    header.appendChild(editBtn);
+    card.appendChild(header);
 
-      const addButton = document.createElement("button");
-      addButton.textContent = currentText || "Přidat poznámku Honzy Kemzy";
-      instructionsDiv.appendChild(addButton);
+    slots.forEach(time=>{
+      const slot=document.createElement("div");
+      slot.className="slot";
+      slot.dataset.time=time;
 
-      addButton.onclick = () => {
-        const honzaModal = document.getElementById("honzaModal");
-        const honzaInput = document.getElementById("honzaInput");
-        honzaInput.value = slotsFromDb[instructionsDocId]?.text || "";
-        honzaModal.classList.add("open");
+      const docId = dateStr + " " + time;
+      if (slotsFromDb[docId]) slot.data = slotsFromDb[docId];
 
-        document.getElementById("honzaSaveBtn").onclick = async () => {
-          await db.collection("slots").doc(instructionsDocId).set({ text: honzaInput.value });
-          addButton.textContent = honzaInput.value || "Přidat poznámku Honzy Kemzy";
-          slotsFromDb[instructionsDocId] = { text: honzaInput.value };
-          honzaModal.classList.remove("open");
-        };
+      renderSlot(slot);
 
-        document.getElementById("honzaCancelBtn").onclick = () =>
-          honzaModal.classList.remove("open");
+      slot.onclick = e => {
+        if (e.target.closest(".delete")) return;
+        activeSlot = slot;
+        fillForm(slot);
+        modal.classList.add("open");
       };
 
-      card.appendChild(instructionsDiv);
+      card.appendChild(slot);
+    });
 
-      defaultSlots.forEach(time => {
-        const slot = document.createElement("div");
-        slot.className = "slot";
-        slot.dataset.time = time;
+    container.appendChild(card);
+    day.setDate(day.getDate()+7);
+  }
+}
 
-        const docId = dateStr + " " + time;
-        if (slotsFromDb[docId]) slot.data = slotsFromDb[docId];
+function renderSlot(slot){
+  if(!slot.data){
+    slot.classList.remove("occupied");
+    slot.innerHTML = `<div class="slot-time">${slot.dataset.time}</div>`;
+    return;
+  }
 
-        renderSlot(slot);
+  const d=slot.data;
+  slot.classList.add("occupied");
+  slot.innerHTML = `
+    <div class="delete"><i class="pi pi-trash"></i></div>
+    <div class="slot-time">${slot.dataset.time}</div>
+    <div class="slot-name">${d.name}</div>
+    <div class="slot-meta">${d.team} · ${d.journey}</div>
+    <span>${d.segment}</span>
+  `;
 
-        slot.onclick = e => {
-          if (e.target.closest(".delete")) return;
-          activeSlot = slot;
-          fillForm(slot);
-          modal.classList.add("open");
-        };
-
-        card.appendChild(slot);
-      });
-
-      container.appendChild(card);
-      day.setDate(day.getDate() + 7);
+  slot.querySelector(".delete").onclick = async e => {
+    e.stopPropagation();
+    if(confirm("Opravdu chcete smazat přihlášku?")){
+      const docId = slot.closest(".card").querySelector("strong").textContent + " " + slot.dataset.time;
+      await db.collection("slots").doc(docId).delete();
+      slot.data=null;
+      renderSlot(slot);
     }
-  }
-
-  function renderSlot(slot) {
-    const data = slot.data;
-    if (!data) {
-      slot.classList.remove("occupied");
-      slot.innerHTML = `<div class="slot-time">${slot.dataset.time}</div>`;
-      return;
-    }
-
-    slot.classList.add("occupied");
-    slot.innerHTML = `
-      <div class="delete"><i class="pi pi-trash"></i></div>
-      <div class="slot-time">${slot.dataset.time}</div>
-      <div class="slot-name">${data.name}</div>
-      <div class="slot-meta">${data.team} · ${data.journey}</div>
-      <span class="badge ${data.segment === "SMB" ? "smb" : "retail"}">${data.segment}</span>
-    `;
-
-    slot.querySelector(".delete").onclick = async e => {
-      e.stopPropagation();
-      if (confirm("Opravdu chcete smazat přihlášku?")) {
-        const docId = slot.closest(".card").querySelector("h2").textContent + " " + slot.dataset.time;
-        await db.collection("slots").doc(docId).delete();
-        slot.data = null;
-        renderSlot(slot);
-      }
-    };
-  }
-
-  function fillForm(slot) {
-    const d = slot.data || {};
-    inputName.value = d.name || "";
-    inputTeam.value = d.team || "";
-    inputJourney.value = d.journey || "";
-    inputSegment.value = d.segment || "";
-    inputNote.value = d.note || "";
-  }
-
-  saveBtn.onclick = async () => {
-    if (!activeSlot) return;
-
-    const slotData = {
-      time: activeSlot.dataset.time,
-      name: inputName.value,
-      team: inputTeam.value,
-      journey: inputJourney.value,
-      segment: inputSegment.value,
-      note: inputNote.value,
-      date: activeSlot.closest(".card").querySelector("h2").textContent
-    };
-
-    await db.collection("slots")
-      .doc(slotData.date + " " + slotData.time)
-      .set(slotData);
-
-    activeSlot.data = slotData;
-    renderSlot(activeSlot);
-    modal.classList.remove("open");
   };
+}
 
-  modal.onclick = e => { if (e.target === modal) modal.classList.remove("open"); };
+function fillForm(slot){
+  const d=slot.data||{};
+  inputName.value=d.name||"";
+  inputTeam.value=d.team||"";
+  inputJourney.value=d.journey||"";
+  inputSegment.value=d.segment||"";
+  inputNote.value=d.note||"";
+}
 
+document.getElementById("saveBtn").onclick = async ()=>{
+  if(!activeSlot) return;
+  const date = activeSlot.closest(".card").querySelector("strong").textContent;
+  const data={
+    name:inputName.value,
+    team:inputTeam.value,
+    journey:inputJourney.value,
+    segment:inputSegment.value,
+    note:inputNote.value,
+    time:activeSlot.dataset.time,
+    date
+  };
+  await db.collection("slots").doc(date+" "+data.time).set(data);
+  activeSlot.data=data;
+  renderSlot(activeSlot);
+  modal.classList.remove("open");
+};
+
+function openSlotsConfig(date, slots){
+  activeDateForSlots = date;
+  const editor=document.getElementById("slotsEditor");
+  editor.innerHTML="";
+  slots.forEach(s=>{
+    const row=document.createElement("div");
+    row.className="slot-editor-row";
+    row.innerHTML=`<input value="${s}"><button class="secondary">✕</button>`;
+    row.querySelector("button").onclick=()=>row.remove();
+    editor.appendChild(row);
+  });
+  document.getElementById("slotsConfigModal").classList.add("open");
+}
+
+document.getElementById("addSlotBtn").onclick=()=>{
+  const row=document.createElement("div");
+  row.className="slot-editor-row";
+  row.innerHTML=`<input placeholder="14:00 – 14:30"><button class="secondary">✕</button>`;
+  row.querySelector("button").onclick=()=>row.remove();
+  document.getElementById("slotsEditor").appendChild(row);
+};
+
+document.getElementById("saveSlotsConfig").onclick=async()=>{
+  const slots=[...document.querySelectorAll("#slotsEditor input")]
+    .map(i=>i.value).filter(Boolean);
+  await db.collection("slots-config").doc(activeDateForSlots).set({slots});
+  document.getElementById("slotsConfigModal").classList.remove("open");
   renderCards();
+};
+
+document.getElementById("modal").onclick = e => {
+  if(e.target.id==="modal") e.target.classList.remove("open");
+};
+
+renderCards();
 </script>
 
 </body>
