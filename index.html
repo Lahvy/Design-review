@@ -26,6 +26,8 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
     h1 { margin: 0; font-size: 22px; }
     button {
@@ -37,6 +39,8 @@
       font-size: 14px;
       cursor: pointer;
     }
+    button:hover { background: #444; }
+    .header-buttons { display: flex; gap: 8px; }
     #todayInfo {
       margin-bottom: 16px;
       font-size: 14px;
@@ -109,6 +113,7 @@
       cursor: pointer;
     }
     .delete:hover i { opacity: 0.7; }
+    
     /* MODAL pro sloty */
     .modal {
       position: fixed;
@@ -118,6 +123,7 @@
       justify-content: center;
       align-items: center;
       padding: 16px;
+      z-index: 1000;
     }
     .modal.open { display: flex; }
     .modal-content {
@@ -138,25 +144,106 @@
       font-size: 14px;
       box-sizing: border-box;
     }
+    
     /* MODAL pro poznámku Honzy */
     #honzaModal .modal-content textarea { min-height: 60px; resize: vertical; }
     #honzaModal .modal-info { font-size: 12px; color: #666; margin-bottom: 8px; }
     #honzaModal button { padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-right: 8px; }
     #honzaModal .save-btn { background: #222; color: white; border: none; }
     #honzaModal .cancel-btn { background: #eee; border: 1px solid #ccc; }
+    
+    /* MODAL pro správu slotů */
+    #slotManagementModal .modal-content {
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    #slotManagementModal h3 { margin-top: 0; }
+    .slot-list {
+      margin-bottom: 16px;
+    }
+    .slot-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .slot-item-content {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+    }
+    .slot-item input {
+      flex: 1;
+      padding: 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .slot-item-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .slot-item-actions button {
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .slot-item-actions button:hover { background: #b71c1c; }
+    .add-slot-section {
+      background: #f9f9f9;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      margin-bottom: 12px;
+    }
+    .add-slot-section input {
+      margin-bottom: 8px;
+    }
+    .add-slot-btn {
+      background: #2e7d32;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .add-slot-btn:hover { background: #1b5e20; }
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .modal-buttons button {
+      flex: 1;
+      padding: 8px 16px;
+    }
+    .close-btn { background: #666; }
+    .close-btn:hover { background: #555; }
   </style>
 </head>
 <body>
 
 <header>
   <h1>Design Review</h1>
-  <button>Historie</button>
+  <div class="header-buttons">
+    <button id="slotManagementBtn">Správa slotů</button>
+    <button>Historie</button>
+  </div>
 </header>
 
 <div id="todayInfo"></div>
 <div class="cards" id="cards"></div>
 
-<!-- MODAL pro sloty -->
+<!-- MODAL pro přihlášení na slot -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3>Přihlášení na slot</h3>
@@ -186,6 +273,26 @@
   </div>
 </div>
 
+<!-- MODAL pro správu slotů -->
+<div class="modal" id="slotManagementModal">
+  <div class="modal-content">
+    <h3>Správa slotů</h3>
+    <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Upravte časy slotů. Změny budou platit pro všechny budoucí dny.</p>
+    
+    <div class="slot-list" id="slotList"></div>
+    
+    <div class="add-slot-section">
+      <h4 style="margin: 0 0 8px 0; font-size: 14px;">Přidat nový slot</h4>
+      <input id="newSlotInput" placeholder="Např. 16:00 – 16:40" />
+      <button class="add-slot-btn" id="addSlotBtn">Přidat slot</button>
+    </div>
+    
+    <div class="modal-buttons">
+      <button class="close-btn" id="closeSlotManagementBtn">Zavřít</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const firebaseConfig = {
   apiKey: "TVŮJ_API_KEY",
@@ -198,7 +305,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
+let defaultSlots = ["13:05 – 13:45","13:45 – 14:25","14:35 – 15:15","15:15 – 15:55"];
 let activeSlot = null;
 
 const inputName = document.getElementById("inputName");
@@ -208,6 +315,105 @@ const inputSegment = document.getElementById("inputSegment");
 const inputNote = document.getElementById("inputNote");
 const saveBtn = document.getElementById("saveBtn");
 const modal = document.getElementById("modal");
+
+// ===== SLOT MANAGEMENT =====
+const slotManagementModal = document.getElementById("slotManagementModal");
+const slotManagementBtn = document.getElementById("slotManagementBtn");
+const closeSlotManagementBtn = document.getElementById("closeSlotManagementBtn");
+const slotList = document.getElementById("slotList");
+const newSlotInput = document.getElementById("newSlotInput");
+const addSlotBtn = document.getElementById("addSlotBtn");
+
+// Load slots from Firestore
+async function loadSlotsFromDb() {
+  try {
+    const doc = await db.collection("settings").doc("slots").get();
+    if (doc.exists && doc.data().times) {
+      defaultSlots = doc.data().times;
+    }
+  } catch (e) {
+    console.log("Sloty budou použity defaultní.");
+  }
+}
+
+// Save slots to Firestore
+async function saveSlotsToDb() {
+  try {
+    await db.collection("settings").doc("slots").set({ times: defaultSlots });
+  } catch (e) {
+    console.error("Chyba při ukládání slotů:", e);
+    alert("Chyba při ukládání slotů!");
+  }
+}
+
+// Render slot management modal
+function renderSlotManagement() {
+  slotList.innerHTML = "";
+  defaultSlots.forEach((slot, index) => {
+    const slotItem = document.createElement("div");
+    slotItem.className = "slot-item";
+    
+    const inputField = document.createElement("input");
+    inputField.type = "text";
+    inputField.value = slot;
+    
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Smazat";
+    deleteBtn.onclick = async () => {
+      defaultSlots.splice(index, 1);
+      await saveSlotsToDb();
+      renderSlotManagement();
+      renderCards();
+    };
+    
+    inputField.onchange = async () => {
+      if (inputField.value.trim()) {
+        defaultSlots[index] = inputField.value.trim();
+        await saveSlotsToDb();
+        renderCards();
+      }
+    };
+    
+    slotItem.appendChild(inputField);
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "slot-item-actions";
+    actionsDiv.appendChild(deleteBtn);
+    slotItem.appendChild(actionsDiv);
+    slotList.appendChild(slotItem);
+  });
+}
+
+slotManagementBtn.onclick = () => {
+  renderSlotManagement();
+  slotManagementModal.classList.add("open");
+};
+
+closeSlotManagementBtn.onclick = () => {
+  slotManagementModal.classList.remove("open");
+};
+
+addSlotBtn.onclick = async () => {
+  const newSlot = newSlotInput.value.trim();
+  if (!newSlot) {
+    alert("Zadejte čas slotu!");
+    return;
+  }
+  if (defaultSlots.includes(newSlot)) {
+    alert("Tento slot již existuje!");
+    return;
+  }
+  defaultSlots.push(newSlot);
+  await saveSlotsToDb();
+  newSlotInput.value = "";
+  renderSlotManagement();
+  renderCards();
+};
+
+slotManagementModal.onclick = e => {
+  if (e.target === slotManagementModal) {
+    slotManagementModal.classList.remove("open");
+  }
+};
 
 // Dnes je
 document.getElementById("todayInfo").textContent = "Dnes je: " + new Date().toLocaleDateString("cs-CZ", {
@@ -318,7 +524,7 @@ function renderSlot(slot) {
   `;
 
   slot.querySelector(".delete").onclick = async (e) => {
-    e.stopPropagation(); // zabránit otevření modalu
+    e.stopPropagation();
     if (confirm("Opravdu chcete smazat přihlášku?")) {
       const docId = slot.closest(".card").querySelector("h2").textContent + " " + slot.dataset.time;
       await db.collection("slots").doc(docId).delete();
@@ -361,7 +567,8 @@ function openModal() { modal.classList.add("open"); }
 function closeModal() { modal.classList.remove("open"); }
 modal.onclick = e => { if (e.target === modal) closeModal(); };
 
-renderCards();
+// Initialize
+loadSlotsFromDb().then(() => renderCards());
 </script>
 
 </body>
